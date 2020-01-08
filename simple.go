@@ -13,14 +13,18 @@ type SimpleEvent struct {
 	f      func() error
 }
 
+// NewTestEvent will create a new event that will trigger in 5 seconds along with a log message
+func NewTestEvent() *SimpleEvent {
+	return NewSimpleEvent(time.Second*5, true, func() error {
+		log.Println("TEST FUNCTION WAS TRIGGERED")
+		return nil
+	})
+}
+
 // NewSimpleEvent will create a simple event that can be triggered
-func NewSimpleEvent(in time.Duration, once bool) *SimpleEvent {
+func NewSimpleEvent(in time.Duration, once bool, f func() error) *SimpleEvent {
 	now := time.Now()
 	when := now.Add(in)
-	f := func() error {
-		log.Println("DEFAULT SIMPLE EVENT TRIGGER FUNCTION")
-		return nil
-	}
 	return &SimpleEvent{when.Hour(), when.Minute(), once, f}
 }
 

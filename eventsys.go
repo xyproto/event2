@@ -43,23 +43,24 @@ func (sys *EventSys) coolOffLoop() {
 	}
 }
 
-// NewEventSystem creates a new event system, where events can be registered
-// and the event loop can be run.
-func NewEventSystem() *EventSys {
+// NewSystem creates a new event system, where events can be registered
+// and the event loop can be run. loopSleep is how long the event loop
+// should sleep at every iteration.
+func NewSystem(loopSleep time.Duration) *EventSys {
 	events := make([]Event, 0)
-	granularity := time.Minute * 1
+	granularity := loopSleep
 	coolOffDuration := time.Minute * 5
 	return &EventSys{events, granularity, coolOffDuration}
 }
 
-// Register will register an event with the event system. Not thread safe.
+// Register will register an event with the event system.
 func (sys *EventSys) Register(event Event) {
-	// TODO: Mutex?
+	// TODO: Not thread safe? Add a mutex?
 	sys.events = append(sys.events, event)
 }
 
 // eventLoop will run the event system endlessly, in the foreground
-func (sys *EventSys) eventLoop() error {
+func (sys *EventSys) eventLoop(verbose bool) error {
 	for {
 		// Check if any events should kick in at this point in time +- error margin, in seconds
 		now := time.Now()
@@ -68,14 +69,21 @@ func (sys *EventSys) eventLoop() error {
 			// If the event is in the coolOff slice, skip for now
 			for _, coolOffEvent := range coolOff {
 				if coolOffEvent == event {
-					log.Println("Skipping event that is in the cool-off period")
+					if verbose {
+						log.Println("Skipping event that is in the cool-off period")
+					}
 					continue NEXT_EVENT
 				}
 			}
 			if now.Hour() == event.Hour() && now.Minute() == event.Minute() {
-				log.Printf("Trigger event at %2d:%2d\n", now.Hour(), now.Minute())
+				if verbose {
+					log.Printf("Trigger event at %02d:%02d\n", now.Hour(), now.Minute())
+				}
 				if event.Trigger() != nil {
-					log.Println("event failed")
+					// TODO: Do something sensible if the trigger fails?
+					if verbose {
+						log.Println("event failed")
+					}
 				}
 				// Placing in the CoolOff slice,
 				// which is handled by the cooloff-system
@@ -89,12 +97,13 @@ func (sys *EventSys) eventLoop() error {
 }
 
 // Run will start the event system in the background and immediately return
-func (sys *EventSys) Run() {
+func (sys *EventSys) Run(verbose bool) {
 	go sys.coolOffLoop()
-	go sys.eventLoop()
+	go sys.eventLoop(verbose)
 }
 
 // Reset will remove a given event from the cool-off queue
+// TODO: This function needs testing!
 func Reset(event Event) {
 	coolOffMut.Lock()
 	s := coolOff
@@ -108,4 +117,16 @@ func Reset(event Event) {
 	s[len(s)-1], s[i] = s[i], s[len(s)-1]
 	coolOff = s[:len(s)-1]
 	coolOffMut.Unlock()
+}
+
+// SimpleEvent creates and registers an event that should happen in a
+// certain amount of time from now, then may optionally be repeated at every
+// matching hour and minute every 24 hours, if "once" is false.
+func (sys *EventSys) SimpleEvent(in time.Duration, once bool, f func() error) {
+	sys.Register(NewSimpleEvent(in, once, f))
+}
+
+// ClockEvent creates and registers an event that should happen at every HH:MM
+func (sys *EventSys) ClockEvent(h, m int, f func() error) {
+	sys.Register(NewClockEvent(h, m, f))
 }

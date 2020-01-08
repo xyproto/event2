@@ -6,8 +6,9 @@ import (
 )
 
 func TestNewSimpleEvent(t *testing.T) {
-	e := NewEventSystem()
-	s := NewSimpleEvent(5*time.Second, true)
-	e.Register(s)
-	e.Run()
+	sys := NewSystem(1 * time.Second)
+	e := NewTestEvent()
+	sys.Register(e)
+	verbose := true
+	sys.Run(verbose)
 }
