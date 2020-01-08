@@ -15,3 +15,4 @@
 # vendor/
 
 cmd/eventclock/eventclock
+cmd/leet/leet
