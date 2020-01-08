@@ -20,14 +20,14 @@ type EventSys struct {
 
 // CoolOff is a list of all events that should not be triggered just yet
 var (
-	coolOff []Event
-	mut     sync.Mutex
+	coolOff    []Event
+	coolOffMut sync.Mutex
 )
 
 func (sys *EventSys) coolOffLoop() {
 	// Every N seconds, remove the first entry from the coolOff slice
 	for {
-		mut.Lock()
+		coolOffMut.Lock()
 		if len(coolOff) > 0 {
 			// If the event should be ran just once, move it to the back of the queue
 			if coolOff[0].JustOnce() {
@@ -38,7 +38,7 @@ func (sys *EventSys) coolOffLoop() {
 				coolOff = coolOff[1:]
 			}
 		}
-		mut.Unlock()
+		coolOffMut.Unlock()
 		time.Sleep(sys.coolOffGranularity)
 	}
 }
@@ -79,9 +79,9 @@ func (sys *EventSys) eventLoop() error {
 				}
 				// Placing in the CoolOff slice,
 				// which is handled by the cooloff-system
-				mut.Lock()
+				coolOffMut.Lock()
 				coolOff = append(coolOff, event)
-				mut.Unlock()
+				coolOffMut.Unlock()
 			}
 		}
 		time.Sleep(sys.granularity)
@@ -92,4 +92,20 @@ func (sys *EventSys) eventLoop() error {
 func (sys *EventSys) Run() {
 	go sys.coolOffLoop()
 	go sys.eventLoop()
+}
+
+// Reset will remove a given event from the cool-off queue
+func Reset(event Event) {
+	coolOffMut.Lock()
+	s := coolOff
+	var i int
+	for i2, e := range coolOff {
+		if e == event {
+			i = i2
+			break
+		}
+	}
+	s[len(s)-1], s[i] = s[i], s[len(s)-1]
+	coolOff = s[:len(s)-1]
+	coolOffMut.Unlock()
 }
