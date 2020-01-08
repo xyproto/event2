@@ -43,6 +43,8 @@ func (sys *EventSys) coolOffLoop() {
 	}
 }
 
+// NewEventSystem creates a new event system, where events can be registered
+// and the event loop can be run.
 func NewEventSystem() *EventSys {
 	events := make([]Event, 0)
 	granularity := time.Minute * 1
@@ -50,12 +52,13 @@ func NewEventSystem() *EventSys {
 	return &EventSys{events, granularity, coolOffDuration}
 }
 
+// Register will register an event with the event system. Not thread safe.
 func (sys *EventSys) Register(event Event) {
 	// TODO: Mutex?
 	sys.events = append(sys.events, event)
 }
 
-// Run will run the event system endlessly, in the foreground
+// eventLoop will run the event system endlessly, in the foreground
 func (sys *EventSys) eventLoop() error {
 	for {
 		// Check if any events should kick in at this point in time +- error margin, in seconds
