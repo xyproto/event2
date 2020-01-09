@@ -130,3 +130,18 @@ func (sys *EventSys) SimpleEvent(in time.Duration, once bool, f func() error) {
 func (sys *EventSys) ClockEvent(h, m int, f func() error) {
 	sys.Register(NewClockEvent(h, m, f))
 }
+
+// EveryMinute will trigger an event every minute for n minutes, starting from h:m
+func (sys *EventSys) EveryMinute(h, m, n int, f func() error) {
+	for i := 0; i < n; i++ {
+		sys.Register(NewClockEvent(h, m, f))
+		m++
+		if m >= 60 {
+			h++
+			m = 0
+		}
+		if h >= 24 {
+			h = 0
+		}
+	}
+}
