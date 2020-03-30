@@ -82,7 +82,7 @@ func (sys *EventSys) eventLoop(verbose bool) error {
 				if event.Trigger() != nil {
 					// TODO: Do something sensible if the trigger fails?
 					if verbose {
-						log.Println("event failed")
+						log.Println("Event failed")
 					}
 				}
 				// Placing in the CoolOff slice,
