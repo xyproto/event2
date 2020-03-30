@@ -6,12 +6,43 @@ A simple event system, for triggering events at certain times. This is the succe
 
 ## Example use
 
+**Leet o'clock**
+
 ```go
 package main
 
 import (
 	"fmt"
 	"sync"
+	"time"
+
+	"github.com/xyproto/event2"
+)
+
+func main() {
+	// Create a new event system, with a loop iteration delay of 1 second
+	eventSys := event2.NewSystem(1 * time.Second)
+	// Add an event that will trigger every day at 13:37
+	eventSys.ClockEvent(13, 37, func() error {
+		fmt.Println("It's leet o'clock")
+		return nil
+	})
+	// Run the event system (not verbose)
+	eventSys.Run(false)
+	// Wait endlessly
+	var wg sync.WaitGroup
+	wg.Add(1)
+	wg.Wait()
+}
+```
+
+**Clock**
+
+```go
+package main
+
+import (
+	"fmt"
 	"time"
 
 	"github.com/xyproto/event2"
@@ -35,19 +66,15 @@ func clockSystem() *event2.EventSys {
 }
 
 func main() {
-	// Create a new event system, with a loop iteration delay of 1 second
-	eventSys := event2.NewSystem(1 * time.Second)
-	// Add an event that will trigger every day at 13:37
-	eventSys.ClockEvent(13, 37, func() error {
-		fmt.Println("It's leet o'clock")
-		return nil
-	})
-	// Run the event system (not verbose)
-	eventSys.Run(false)
-	// Wait endlessly
-	var wg sync.WaitGroup
-	wg.Add(1)
-	wg.Wait()
+	// Start the event system that will trigger an event at every minute
+	clockSystem().Run(false)
+	// Wait endlessly while saying "tick" and "tock" every second
+	for {
+		fmt.Println("tick")
+		time.Sleep(1 * time.Second)
+		fmt.Println("tock")
+		time.Sleep(1 * time.Second)
+	}
 }
 ```
 
